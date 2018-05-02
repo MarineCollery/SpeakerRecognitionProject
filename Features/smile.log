@@ -1,0 +1,17 @@
+[ 02.05.2018 - 18:44:38 ]
+    (MSG) [2] in SMILExtract : openSMILE starting!
+[ 02.05.2018 - 18:44:38 ]
+    (MSG) [2] in SMILExtract : config file is: /Users/Marine/Downloads/openSMILE-2.1.0/myconfig/Speaker_recognition.conf
+[ 02.05.2018 - 18:44:38 ]
+    (MSG) [2] in cComponentManager : successfully registered 95 component types.
+[ 02.05.2018 - 18:44:38 ]
+    (MSG) [2] in instance 'lldsink' : No filename given, disabling this sink component.
+[ 02.05.2018 - 18:44:38 ]
+    (MSG) [2] in instance 'arffsink' : No filename given, disabling this sink component.
+[ 02.05.2018 - 18:44:38 ]
+    (MSG) [2] in cComponentManager : successfully finished createInstances
+                                 (45 component instances were finalised, 1 data memories were finalised)
+[ 02.05.2018 - 18:44:38 ]
+    (MSG) [2] in cComponentManager : starting single thread processing loop
+[ 02.05.2018 - 18:45:02 ]
+    (MSG) [2] in cComponentManager : Processing finished! System ran for 34326 ticks.
