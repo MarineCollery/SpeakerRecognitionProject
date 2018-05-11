@@ -25,6 +25,9 @@ import matplotlib
 # matplotlib.use('agg')
 from matplotlib import pyplot as plt
 
+from sklearn.preprocessing import StandardScaler
+
+
 
 
 # Read Data ,Pre Processing, Dimensionality Reduction from data.py
@@ -58,7 +61,6 @@ def main():
     
     
     
-    
     df_train = df_mfcc.sample(frac=0.02, random_state=1)
     df_test = df_mfcc.drop(df_train.index)
     
@@ -67,13 +69,17 @@ def main():
     dataset = data.restructure_data(df_train)
     dataset_test = data.restructure_data(df_test)
     
-    
+    ## Pre processing
+    scaler = StandardScaler()
+    dataset['data'] = scaler.fit_transform(dataset['data'].values.astype('float'))
+    dataset_test['data'] = scaler.transform(dataset_test['data'].values.astype('float'))
+
 
     clf = SVC(C=1, class_weight='balanced', verbose=1, probability=True)
     print("Training...")
-    clf.fit(dataset['data'].values.astype('float'), dataset['target'])
+    clf.fit(dataset['data'], dataset['target'])
     print("Prediciting...")
-    predicted = clf.predict(dataset_test['data'].values.astype('float'))
+    predicted = clf.predict(dataset_test['data'])
     print("\naccuracy : "+str(np.mean(predicted == dataset_test['target'])))
     
     # Read Data
