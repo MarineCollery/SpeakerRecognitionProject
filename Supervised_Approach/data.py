@@ -83,6 +83,7 @@ def restructure_data(df):
     dataset['data'] = features
     dataset['target'] = target
     dataset['target_names'] = target_names
+    dataset['language'] = df['language']
     
     
     return dataset
