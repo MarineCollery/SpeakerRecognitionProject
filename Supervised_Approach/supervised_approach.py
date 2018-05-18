@@ -83,35 +83,53 @@ def trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA',
 
 
 def main():
-    df, df_mfcc  = data.main();
+
+    #Adding Feature path
     
+    path_file = open("mypath.txt", "r")
+    path = path_file.read()
+    print(path)
+    path_file.close()
     
-#    #TO DO : ADAPT FEATUERS
-#    
-#    df_train = df.sample(frac=0.8, random_state=1)
-#    df_test = df.drop(df_train.index)
-#    
-#    dataset = data.restructure_data(df_train)
-#    dataset_test = data.restructure_data(df_test)
-#    
-#    
-#
-#    clf = SVC(C=1, class_weight='balanced', verbose=0, probability=True)
-#    clf.fit(dataset['data'].values.astype('float'), dataset['target'])
-#    
-#    predicted = clf.predict(dataset_test['data'].values.astype('float'))
-#    print("\naccuracy : "+str(np.mean(predicted == dataset_test['target'])))
+    os.chdir(path)
     
-    df_train = df_mfcc.sample(frac=0.02, random_state=1)
-    df_test = df_mfcc.drop(df_train.index)
-    
-    df_test = df_test.sample(frac=0.02, random_state=1)
+
+    # Load dataset 
+    # data.data(name) loads the dataset based on training on French
+    # and testing with the other language
+    # WORKS
+    df_train, df_test = data.data('Speaker_trait')
+
+    # data_ONE_LANG(name, language="L2", frac_train=0.02)
+    # loads or create the dataset based on training on argument language
+    # with the specific 
+    # and testing with the other language
+    # DOESNT WORK YET
+#    data_ONE_LANG(name, language="L2", frac_train=0.02) 
+
+    df_train = df_train.fillna(0)#all NaN replaced by 0
+    df_test = df_test.fillna(0)#all NaN replaced by 0
+
     
     dataset = data.restructure_data(df_train)
     dataset_test = data.restructure_data(df_test)
     
-    dataset_original = copy.deepcopy(dataset['data'])
-    dataset_test_original = copy.deepcopy(dataset_test['data'])
+    print(trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA', classifier="SVC"))
+
+    
+    
+    
+    
+#    df_train = df_mfcc.sample(frac=0.02, random_state=1)
+#    df_test = df_mfcc.drop(df_train.index)
+#    
+#    df_test = df_test.sample(frac=0.02, random_state=1)
+#    
+#    dataset = data.restructure_data(df_train)
+#    dataset_test = data.restructure_data(df_test)
+#    
+#    dataset_original = copy.deepcopy(dataset['data'])
+#    dataset_test_original = copy.deepcopy(dataset_test['data'])
 
     # accuracies = []
     # for k in range(1, 41,4):
@@ -171,34 +189,34 @@ def main():
     
     # on this set the best outcome is with 40 features
 
-    ## SVM
-    dataset['data'] = dataset_original
-    dataset_test['data'] = dataset_test_original
-
-    dataset['data'] = dataset['data'].values.astype('float')
-    dataset_test['data'] =  dataset_test['data'].values.astype('float')
-
-    print(trainAndEvaluate(dataset, dataset_test, classifier='SVC'))
-    # 0.8343206219918549
-    ## kNN
-    dataset['data'] = dataset_original
-    dataset_test['data'] = dataset_test_original
-
-    dataset['data'] = dataset['data'].values.astype('float')
-    dataset_test['data'] =  dataset_test['data'].values.astype('float')
-
-    print(trainAndEvaluate(dataset, dataset_test, classifier='kNN'))
-    # 0.7051092188078489
-
-    ## kNN
-    dataset['data'] = dataset_original
-    dataset_test['data'] = dataset_test_original
-
-    dataset['data'] = dataset['data'].values.astype('float')
-    dataset_test['data'] =  dataset_test['data'].values.astype('float')
-
-    print(trainAndEvaluate(dataset, dataset_test, classifier='tree'))
-    # 0.5194372454646428
+#    ## SVM
+#    dataset['data'] = dataset_original
+#    dataset_test['data'] = dataset_test_original
+#
+#    dataset['data'] = dataset['data'].values.astype('float')
+#    dataset_test['data'] =  dataset_test['data'].values.astype('float')
+#
+#    print(trainAndEvaluate(dataset, dataset_test, classifier='SVC'))
+#    # 0.8343206219918549
+#    ## kNN
+#    dataset['data'] = dataset_original
+#    dataset_test['data'] = dataset_test_original
+#
+#    dataset['data'] = dataset['data'].values.astype('float')
+#    dataset_test['data'] =  dataset_test['data'].values.astype('float')
+#
+#    print(trainAndEvaluate(dataset, dataset_test, classifier='kNN'))
+#    # 0.7051092188078489
+#
+#    ## kNN
+#    dataset['data'] = dataset_original
+#    dataset_test['data'] = dataset_test_original
+#
+#    dataset['data'] = dataset['data'].values.astype('float')
+#    dataset_test['data'] =  dataset_test['data'].values.astype('float')
+#
+#    print(trainAndEvaluate(dataset, dataset_test, classifier='tree'))
+#    # 0.5194372454646428
 
 
     # Read Data
