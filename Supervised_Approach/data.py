@@ -135,7 +135,7 @@ def split_data_balanced_LANGUAGE(df, name, language="L2",all_train=False):
     
     
     df_ref_left = df[df.language!=language]
-    if all : 
+    if all_train : 
 #        all Langague in training
         frac_train=1
         df_ref_SP1_train = df_ref_SP1.sample(frac=frac_train, random_state=1)

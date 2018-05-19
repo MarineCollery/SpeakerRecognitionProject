@@ -36,22 +36,38 @@ from sklearn import neighbors
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.manifold import TSNE
+
+
+
+
+
 ## Plot data with PCA to 2:
 
-df, df_mfcc  = data.main();
+#df_train,df_test = data.data('MFCC', language="L2")
+df_train,df_test = data.data('Speaker_trait')
 
-df_train = df_mfcc.sample(frac=0.05, random_state=1)
+df_train = df_train.fillna(0)#all NaN replaced by 0
+df_test = df_test.fillna(0)#all NaN replaced by 0
+
+
+df_test.sample(10000, randomState=17)
 
 dataset = data.restructure_data(df_train)
+dataset_test = data.restructure_data(df_test)
 
-dataset['data'] = dataset['data'].values.astype('float')
-dataset['target'] = dataset['target'].values.astype('str')
-dataset['language'] = dataset['language'].values.astype('str')
+dataset['data'] = dataset['data'].values.astype('float').append(dataset_test['data'].values.astype('float'))
+dataset['target'] = dataset['target'].values.astype('str').append(dataset_test['target'].values.astype('str'))
+dataset['language'] = dataset['language'].values.astype('str').append(dataset_test['language'].values.astype('str'))
 
 standard_scaler = StandardScaler()
 dataset['data'] = standard_scaler.fit_transform(dataset['data'])
 
-dimRed = PCA(n_components=2)
+# reduce dimentionnality a bit if too high
+##dimRed = PCA(n_components=50)
+##dataset['data'] = dimRed.fit_transform(dataset['data'])
+
+dimRed = TSNE(n_components=2)
 
 dataset['data'] = dimRed.fit_transform(dataset['data'])
 
