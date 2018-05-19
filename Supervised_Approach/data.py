@@ -94,27 +94,30 @@ def restructure_data(df):
 def split_data_balanced_ONLY_ONE_LANG(df, name, language="L2", frac_train=0.2):
     new_df = df[df.language==language]
     
-    df_ref_SP1 = new_df[(new_df.target_names=="Sp1")]
-    df_ref_SP2 = new_df[(new_df.target_names=="Sp2")]
-    df_ref_SP3 = new_df[(new_df.target_names=="Sp3")]    
+#    df_ref_SP1 = new_df[(new_df.target_names=="Sp1")]
+#    df_ref_SP2 = new_df[(new_df.target_names=="Sp2")]
+#    df_ref_SP3 = new_df[(new_df.target_names=="Sp3")]    
+#    
+#
+#    nb_sample_max = min(df_ref_SP1.shape[0],df_ref_SP2.shape[0],df_ref_SP3.shape[0])
+#    nb_row_by_speaker = int(nb_sample_max*frac_train)
+#
+#    print(nb_row_by_speaker)
+#
+#    df_train = pd.concat([df_ref_SP1.sample(nb_row_by_speaker, random_state=12),
+#                        df_ref_SP2.sample(nb_row_by_speaker, random_state=12),
+#                        df_ref_SP3.sample(nb_row_by_speaker, random_state=12)])# number of samples we keep
+#
+#    df_test = new_df.drop(df_train.index)
+#    #TO DO dOES NOT WORK !!!
+#    print(df_train.shape[0])
+#    print(df_test.shape[0])
+#    
+#    df_train.sample(frac=1)# randomize 
+#    df_test.sample(frac=1)# randomize 
     
-
-    nb_sample_max = min(df_ref_SP1.shape[0],df_ref_SP2.shape[0],df_ref_SP3.shape[0])
-    nb_row_by_speaker = int(nb_sample_max*frac_train)
-
-    print(nb_row_by_speaker)
-
-    df_train = pd.concat([df_ref_SP1.sample(nb_row_by_speaker, random_state=12),
-                        df_ref_SP2.sample(nb_row_by_speaker, random_state=12),
-                        df_ref_SP3.sample(nb_row_by_speaker, random_state=12)])# number of samples we keep
-
+    df_train = new_df.sample(frac=frac_train, random_state=1)
     df_test = new_df.drop(df_train.index)
-    #TO DO dOES NOT WORK !!!
-    print(df_train.shape[0])
-    print(df_test.shape[0])
-    
-    df_train.sample(frac=1)# randomize 
-    df_test.sample(frac=1)# randomize 
 
     df_train.to_csv("TRAINING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(frac_train)+"_for_training.csv",index=True)
     df_test.to_csv("TESTING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(frac_train)+"_for_training.csv",index=True)
@@ -122,7 +125,7 @@ def split_data_balanced_ONLY_ONE_LANG(df, name, language="L2", frac_train=0.2):
     return df_train, df
 
 
-def split_data_balanced_LANGUAGE(df, name, language="L2",all=False):
+def split_data_balanced_LANGUAGE(df, name, language="L2",all_train=False):
     print(df.size)
     
     
@@ -160,17 +163,17 @@ def split_data_balanced_LANGUAGE(df, name, language="L2",all=False):
     print(df_train.size)
     print(df_test.size)
     
-    df_train.to_csv("TRAINING_"+name+"_speaker_balanced_"+str(all)+language+"_training_OTHER_testing.csv",index=True)
-    df_test.to_csv("TESTING_"+name+"_speaker_balanced_"+str(all)+language+"_training_OTHER_testing.csv",index=True)
+    df_train.to_csv("TRAINING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv",index=True)
+    df_test.to_csv("TESTING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv",index=True)
     
     return df_train, df_test
 
 
 
-def data(name, language="L2",all=False):
+def data(name, language="L2",all_train=False):
     try:
-        df_train = pd.read_csv("TRAINING_"+name+"_speaker_balanced_"+str(all)+language+"_training_OTHER_testing.csv", ',')
-        df_test = pd.read_csv("TESTING_"+name+"_speaker_balanced_"+str(all)+language+"_training_OTHER_testing.csv", ',')
+        df_train = pd.read_csv("TRAINING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv", ',')
+        df_test = pd.read_csv("TESTING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv", ',')
         print("database "+name+" already splitted and created")
         return df_train,df_test
     except:
@@ -210,8 +213,8 @@ def main():
     os.chdir(path)
 
     
-    df_train,df_test = data('Speaker_trait', language="L2")
-    df_train,df_test = data('MFCC', language="L2")
+    df_train,df_test = data_ONE_LANG('Speaker_trait', language="L2")
+#    df_train,df_test = data('MFCC', language="L2")
 #    df_train_mfcc, df_test_mfcc = data('MFCC')
     
     
