@@ -66,7 +66,7 @@ def trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA',
 
     ## Classifier initialisation
     if (classifier == 'SVC'):
-        clf = SVC(C=1, class_weight='balanced', verbose=0, probability=True)
+        clf = SVC(C=1, class_weight='balanced', verbose=1, probability=True)
     elif (classifier == 'kNN'):
         clf = neighbors.KNeighborsClassifier(n_neighbors=10)
     elif (classifier == 'tree'):
@@ -78,9 +78,65 @@ def trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA',
     print("Prediciting...")
     predicted = clf.predict(dataset_test['data'])
     accuracy = np.mean(predicted == dataset_test['target'])
+    cnf_matrix = confusion_matrix(dataset_test['target'], predicted)
 
-    return accuracy
+    return accuracy, cnf_matrix
 
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                  horizontalalignment="center",
+                  color="white" if cm[i, j] > thresh else "black")
+#        plt.text(j, i, format(' '),
+#                 horizontalalignment="center",
+#                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+
+def plot_un_and_normalized_cnf(cnf_matrix, classes, name):
+    np.set_printoptions(precision=2)
+   
+    # Plot non-normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix,classes=classes, title='Confusion matrix, without normalization')
+    plt.savefig(name+'.png')
+
+
+    # Plot normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix, normalize=True, classes=classes, title='Normalized confusion matrix')
+    plt.savefig(name+'_normalized.png')
+    plt.show()
+    
+    
 
 def main():
 
@@ -93,19 +149,23 @@ def main():
     
     os.chdir(path)
     
-
+    dataset_name ='Speaker_trait'
+    dataset_name_MFCC ='MFCC'
+    language="L2"
+    frac_train=0.2
+    classifier="SVC"
+    
     # Load dataset 
     # data.data(name) loads the dataset based on training on French
     # and testing with the other language
-    # WORKS
-    df_train, df_test = data.data('Speaker_trait')
+    
+    df_train, df_test = data.data(dataset_name, language)
 
     # data_ONE_LANG(name, language="L2", frac_train=0.02)
     # loads or create the dataset based on training on argument language
     # with the specific 
     # and testing with the other language
-    # DOESNT WORK YET
-#    data_ONE_LANG(name, language="L2", frac_train=0.02) 
+#    df_train, df_test = data.data_ONE_LANG(dataset_name_MFCC, language, frac_train) 
 
     df_train = df_train.fillna(0)#all NaN replaced by 0
     df_test = df_test.fillna(0)#all NaN replaced by 0
@@ -114,8 +174,11 @@ def main():
     dataset = data.restructure_data(df_train)
     dataset_test = data.restructure_data(df_test)
     
-    print(trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA', classifier="SVC"))
-
+    acc, cnf_matrix = trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA', classifier="SVC")
+    print(acc)
+    plot_un_and_normalized_cnf(cnf_matrix, dataset['target_names'], dataset_name+'_'+language+'_'+'train'+'_'+'LEFT_FOR_TEST')
+#    plot_un_and_normalized_cnf(cnf_matrix, dataset['target_names'], dataset_name_MFCC+'_'+language+'_'+'ONLY'+'_'+str(frac_train))
+    
     
     
     
