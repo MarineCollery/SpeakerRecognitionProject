@@ -125,7 +125,7 @@ def split_data_balanced_ONLY_ONE_LANG(df, name, language="L2", frac_train=0.2):
     return df_train, df
 
 
-def split_data_balanced_LANGUAGE(df, name, language="L2",all_train=False):
+def split_data_balanced_LANGUAGE(df, name, language="L2",all_train=False,nbr_elements=10000):
     print(df.size)
     
     
@@ -146,8 +146,6 @@ def split_data_balanced_LANGUAGE(df, name, language="L2",all_train=False):
         df_train = pd.concat([df_ref_SP1_train, df_ref_SP2_train, df_ref_SP3_train])
     
     else:
-    #    #nbr_elements of  Langague in training
-        nbr_elements = 10000
         nb_row_by_speaker = int(nbr_elements/3)
         
         df_train = pd.concat([df_ref_SP1.sample(nb_row_by_speaker, random_state=12),
@@ -157,29 +155,27 @@ def split_data_balanced_LANGUAGE(df, name, language="L2",all_train=False):
 
     df_test = df_ref_left
     
-    df_train.sample(frac=1)# randomize
-    df_test.sample(frac=1)# randomize
 
     print(df_train.size)
     print(df_test.size)
     
-    df_train.to_csv("TRAINING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv",index=True)
-    df_test.to_csv("TESTING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv",index=True)
+    df_train.to_csv("TRAINING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_"+str(nbr_elements)+"_OTHER_testing.csv",index=True)
+    df_test.to_csv("TESTING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_"+str(nbr_elements)+"_OTHER_testing.csv",index=True)
     
     return df_train, df_test
 
 
 
-def data(name, language="L2",all_train=False):
+def data(name, language="L2",all_train=False,nbr_elements=10000):
     try:
-        df_train = pd.read_csv("TRAINING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv", ',')
-        df_test = pd.read_csv("TESTING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_OTHER_testing.csv", ',')
+        df_train = pd.read_csv("TRAINING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_"+str(nbr_elements)+"_OTHER_testing.csv", ',')
+        df_test = pd.read_csv("TESTING_"+name+"_speaker_balanced_"+str(all_train)+"_"+language+"_training_"+str(nbr_elements)+"_OTHER_testing.csv", ',')
         print("database "+name+" already splitted and created")
         return df_train,df_test
     except:
         print("database "+name+" needs to be created")
         df = read_features(name)
-        df_train, df_test = split_data_balanced_LANGUAGE(df, name, language)
+        df_train, df_test = split_data_balanced_LANGUAGE(df, name, language,all_train,nbr_elements)
         return df_train,df_test
     
 
