@@ -13,6 +13,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.decomposition import PCA
 
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 from sklearn import preprocessing
 
 import numpy as np
@@ -36,6 +37,7 @@ from sklearn import neighbors
 
 from sklearn.tree import DecisionTreeClassifier
 
+import pandas as pd
 
 
 
@@ -48,12 +50,17 @@ from sklearn.tree import DecisionTreeClassifier
 
 # generation confusion Matrix and ROC curve if possible
 
-def trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA', classifier="SVC"):
+def trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA', classifier="SVC", preproc_speaker=False):
 
     ## Pre processing
-    standard_scaler = StandardScaler()
-    dataset['data'] = standard_scaler.fit_transform(dataset['data'])
-    dataset_test['data'] = standard_scaler.transform(dataset_test['data'])
+    if(preproc_speaker):
+        print("preprocessing has been computed previously")
+
+    else:
+        standard_scaler = StandardScaler()
+        standard_scaler.fit(dataset['data'])
+        dataset['data'] = standard_scaler.fit_transform(dataset['data'], standard_scaler.get_params())
+        dataset_test['data'] = standard_scaler.transform(dataset_test['data'], standard_scaler.get_params())
 
     ## Dimensionality reduction
     if (dimReduction == 'PCA'):
@@ -66,21 +73,214 @@ def trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA',
 
     ## Classifier initialisation
     if (classifier == 'SVC'):
-        clf = SVC(C=1, class_weight='balanced', verbose=0, probability=True)
+        clf = SVC(C=1, class_weight='balanced', verbose=1, probability=True)
     elif (classifier == 'kNN'):
         clf = neighbors.KNeighborsClassifier(n_neighbors=10)
     elif (classifier == 'tree'):
         clf = DecisionTreeClassifier(class_weight ='balanced', random_state=1)
 
-
+    
     print("Training...")
     clf.fit(dataset['data'], dataset['target'])
     print("Prediciting...")
     predicted = clf.predict(dataset_test['data'])
+    
+    report = classification_report(dataset_test['target'], predicted, target_names=dataset_test['target_names'])
+    
     accuracy = np.mean(predicted == dataset_test['target'])
+    cnf_matrix = confusion_matrix(dataset_test['target'], predicted)
 
-    return accuracy
+    return accuracy, cnf_matrix, report
 
+def standardization_speaker(df_train, df_test):
+    
+    standard_scaler = StandardScaler()
+    
+    # SP1
+    df_train1 = df_train[(df_train.target_names=="Sp1")]
+    features = df_train1.loc[:, df_train1.columns != 'name']
+    features = features.loc[:, features.columns != 'target_names']
+    features = features.loc[:, features.columns != 'language']
+    
+    column_names = features.columns.values.tolist()
+    standard_scaler.fit(features)
+    
+    df_train1 = standard_scaler.fit_transform(features, standard_scaler.get_params())
+    
+    df_test1 = df_test[(df_test.target_names=="Sp1")]
+    features = df_test1.loc[:, df_test1.columns != 'name']
+    features = features.loc[:, features.columns != 'target_names']
+    features = features.loc[:, features.columns != 'language']
+    
+    df_test1 = standard_scaler.transform(features, standard_scaler.get_params())
+    
+    
+    # SP2
+    df_train2 = df_train[(df_train.target_names=="Sp2")]
+    features = df_train2.loc[:, df_train2.columns != 'name']
+    features = features.loc[:, features.columns != 'target_names']
+    features = features.loc[:, features.columns != 'language']
+    
+    standard_scaler.fit(features)
+    df_train2 = standard_scaler.fit_transform(features, standard_scaler.get_params())
+    
+    df_test2 = df_test[(df_test.target_names=="Sp2")]
+    features = df_test2.loc[:, df_test2.columns != 'name']
+    features = features.loc[:, features.columns != 'target_names']
+    features = features.loc[:, features.columns != 'language']
+    
+    df_test2 = standard_scaler.transform(features, standard_scaler.get_params())
+    
+    # SP3
+    df_train3 = df_train[(df_train.target_names=="Sp3")]
+    features = df_train3.loc[:, df_train3.columns != 'name']
+    features = features.loc[:, features.columns != 'target_names']
+    features = features.loc[:, features.columns != 'language']
+    
+    standard_scaler.fit(features)
+    df_train3 = standard_scaler.fit_transform(features, standard_scaler.get_params())
+    
+    df_test3 = df_test[(df_test.target_names=="Sp3")]
+    features = df_test3.loc[:, df_test3.columns != 'name']
+    features = features.loc[:, features.columns != 'target_names']
+    features = features.loc[:, features.columns != 'language']
+    
+    df_test3 = standard_scaler.transform(features, standard_scaler.get_params())
+    
+    #To dataframe type
+    df_train1 = pd.DataFrame(data = df_train1, columns = column_names)
+    df_train2 = pd.DataFrame(data = df_train2, columns = column_names)
+    df_train3 = pd.DataFrame(data = df_train3, columns = column_names)
+    
+    df_test1 = pd.DataFrame(data = df_test1, columns = column_names)
+    df_test2 = pd.DataFrame(data = df_test2, columns = column_names)
+    df_test3 = pd.DataFrame(data = df_test3, columns = column_names)
+     
+    #concat
+    df_train_fin = pd.concat([df_train1, df_train2, df_train3])
+    df_test_fin = pd.concat([df_test1, df_test2, df_test3])
+    
+    #Reindex
+    df_train_fin.index = range(df_train_fin.shape[0])
+    df_test_fin.index = range(df_test_fin.shape[0])
+    
+    #concat with final columns
+    df_train_fin = pd.concat([df_train_fin, df_train.loc[:, df_train.columns == 'language'], df_train.loc[:, df_train.columns == 'name'],df_train.loc[:, df_train.columns == 'target_names']], axis = 1)
+    df_test_fin = pd.concat([df_test_fin, df_test.loc[:, df_test.columns == 'language'], df_test.loc[:, df_test.columns == 'name'],df_test.loc[:, df_test.columns == 'target_names']], axis = 1)
+    
+    #randomize
+    df_train=df_train_fin.sample(frac=1,random_state=1)
+    df_test=df_test_fin.sample(frac=1,random_state=1)
+    
+    
+    return df_train, df_test
+
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                  horizontalalignment="center",
+                  color="white" if cm[i, j] > thresh else "black")
+#        plt.text(j, i, format(' '),
+#                 horizontalalignment="center",
+#                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+
+def plot_un_and_normalized_cnf(cnf_matrix, classes, name):
+    np.set_printoptions(precision=2)
+   
+    # Plot non-normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix,classes=classes, title='Confusion matrix, without normalization')
+    plt.savefig(name+'.png')
+
+
+    # Plot normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix, normalize=True, classes=classes, title='Normalized confusion matrix')
+    plt.savefig(name+'_normalized.png')
+#    plt.show()
+    
+def generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2, 
+                   classifier="SVC", n_components=40, dimReduction='PCA', 
+                   pre_speaker=False, nbr_elements=10000):
+    
+    
+    if one_lang:
+        df_train, df_test = data.data_ONE_LANG(dataset_name, language, frac_train) 
+        name = dataset_name+'_'+language+'_'+'ONLY'+'_'+str(frac_train)+'_'+dimReduction+'_'+str(n_components)+'_pre_speaker_'+str(pre_speaker)
+    else:
+        df_train, df_test = data.data(dataset_name, language, all_train=False, nbr_elements=nbr_elements)
+        name = dataset_name+'_'+language+'_'+str(nbr_elements)+'_train_'+'LEFT_FOR_TEST'+'_'+dimReduction+'_'+str(n_components)+'_pre_speaker_'+str(pre_speaker)
+    
+    #Delete unwanted colums
+    if 'frameIndex' in df_train.columns.values.tolist():
+        #Database MFCC
+        columns = ['Unnamed: 0', 'frameIndex', 'frameTime']
+        df_train.drop(columns, inplace=True, axis=1)
+        df_test.drop(columns, inplace=True, axis=1)
+    elif 'Unnamed: 0.1' in df_train.columns.values.tolist():
+        #Database Speaker trait
+        columns = ['Unnamed: 0', 'Unnamed: 0.1']
+        df_train.drop(columns, inplace=True, axis=1)
+        df_test.drop(columns, inplace=True, axis=1)
+        
+    df_train = df_train.fillna(0)#all NaN replaced by 0
+    df_test = df_test.fillna(0)#all NaN replaced by 0
+    
+    if pre_speaker:
+        #normalize and randomize
+        df_train, df_test = standardization_speaker(df_train, df_test)
+    else:
+        #randomize
+        df_train=df_train.sample(frac=1,random_state=1)
+        df_test=df_test.sample(frac=1,random_state=1)
+        
+    #Restructure for the next steps (training)
+    dataset = data.restructure_data(df_train)
+    dataset_test = data.restructure_data(df_test)
+    
+    acc, cnf_matrix, report = trainAndEvaluate(dataset, dataset_test, n_components, dimReduction, classifier, pre_speaker)
+    f = open(name+'.txt','w')
+    f.write(report)
+    f.write("\n Accuracy:%0.6f" % acc)
+    f.close()
+    print(acc)
+    
+    plot_un_and_normalized_cnf(cnf_matrix, dataset['target_names'], name)
+    
+    
+    return acc
+    
+    
 
 def main():
 
@@ -93,33 +293,123 @@ def main():
     
     os.chdir(path)
     
-
-    # Load dataset 
-    # data.data(name) loads the dataset based on training on French
-    # and testing with the other language
-    # WORKS
-    df_train, df_test = data.data('Speaker_trait')
-
-    # data_ONE_LANG(name, language="L2", frac_train=0.02)
-    # loads or create the dataset based on training on argument language
-    # with the specific 
-    # and testing with the other language
-    # DOESNT WORK YET
-#    data_ONE_LANG(name, language="L2", frac_train=0.02) 
-
-    df_train = df_train.fillna(0)#all NaN replaced by 0
-    df_test = df_test.fillna(0)#all NaN replaced by 0
-
+    dataset_name ='Speaker_trait'
+    dataset_name_MFCC ='MFCC'
+    language="L2"
+    frac_train=0.2
+    classifier="SVC"
     
-    dataset = data.restructure_data(df_train)
-    dataset_test = data.restructure_data(df_test)
+    #dimensionality reduction 
+    n_components=40
+    dimReduction='PCA'
     
-    print(trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA', classifier="SVC"))
-
+    # Standardization on the speaker level
+    pre_speaker = False
     
+#    generate_plots(dataset_name_MFCC, one_lang=False, language="L2", frac_train=0.2, 
+#                   classifier="SVC", n_components=30, dimReduction='PCA', 
+#                   pre_speaker=False, nbr_elements=10000)
     
-    
-    
+    acc =[]
+    acc2 =[]
+    for i in range (9,39,3):
+        print("Generating %d" % i)
+        acc.append(generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2, 
+                   classifier="SVC", n_components=i, dimReduction='PCA', 
+                   pre_speaker=True, nbr_elements=10000))
+        acc2.append(generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2, 
+                   classifier="SVC", n_components=i, dimReduction='PCA', 
+                   pre_speaker=False, nbr_elements=10000))
+        
+    plt.plot(range (9,39,3),acc,'bo', label='std per speaker')
+    plt.plot(range (9,39,3),acc2,'bo', label='std on all data')
+    plt.legend()
+    plt.title("Accuracy evolution with nbr of components of PCA dimensionality reduction")
+    plt.xlabel("Accuracy")
+    plt.ylabel("nbr component")
+    plt.savefig(dataset_name+'_Evolution_Acc_PCA.png')
+    plt.show()
+#        
+#    
+#    # Load dataset 
+#    # data.data(name) loads the dataset based on training on French
+#    # and testing with the other language
+#    
+#    df_train, df_test = data.data(dataset_name, language,nbr_elements=10000)
+#    df_train_2, df_test_2 = data.data(dataset_name, language,nbr_elements=10000)
+#
+#    # data_ONE_LANG(name, language="L2", frac_train=0.02)
+#    # loads or create the dataset based on training on argument language
+#    # with the specific 
+#    # and testing with the other language
+##    df_train, df_test = data.data_ONE_LANG(dataset_name_MFCC, language, frac_train) 
+#    
+#    if 'frameIndex' in df_train.columns.values.tolist():
+#        #Database MFCC
+#        columns = ['Unnamed: 0', 'frameIndex', 'frameTime']
+#        df_train.drop(columns, inplace=True, axis=1)
+#        df_test.drop(columns, inplace=True, axis=1)
+#    elif 'Unnamed: 0.1' in df_train.columns.values.tolist():
+#        #Database Speaker trait
+#        columns = ['Unnamed: 0', 'Unnamed: 0.1']
+#        df_train.drop(columns, inplace=True, axis=1)
+#        df_test.drop(columns, inplace=True, axis=1)
+#        
+#    
+#    df_train = df_train.fillna(0)#all NaN replaced by 0
+#    df_test = df_test.fillna(0)#all NaN replaced by 0
+#    
+#    
+#    if pre_speaker:
+#        df_train, df_test = standardization_speaker(df_train, df_test)
+#    else:
+#        df_train=df_train.sample(frac=1,random_state=1)
+#        df_test=df_test.sample(frac=1,random_state=1)
+#    
+#    
+#    dataset = data.restructure_data(df_train)
+#    dataset_test = data.restructure_data(df_test)
+#    
+#    for i in range(10, 40, )
+#    acc, cnf_matrix = trainAndEvaluate(dataset, dataset_test, n_components, dimReduction, classifier="SVC", preproc_speaker=pre_speaker)
+#    print(acc)
+##     plot_un_and_normalized_cnf(cnf_matrix, dataset['target_names'], dataset_name+'_'+language+'_'+'train'+'_'+'LEFT_FOR_TEST'+'_'+dimReduction+'_'+str(n_components))
+#    plot_un_and_normalized_cnf(cnf_matrix, dataset['target_names'], dataset_name_MFCC+'_'+language+'_'+'ONLY'+'_'+str(frac_train)+'_'+dimReduction+'_'+str(n_components))
+#    
+#
+#    x = dataset_test['data']
+#    
+##    x = pd.concat([dataset['data'],dataset_test['data']])
+#    
+#    
+#    
+#    
+#    from sklearn.decomposition import PCA
+#    pca = PCA(n_components=2)
+#    principalComponents = pca.fit_transform(x)
+#    principalDf = pd.DataFrame(data = principalComponents
+#             , columns = ['principal component 1', 'principal component 2'])
+#
+#    finalDf = pd.concat([principalDf, dataset_test['target']], axis = 1)
+#    
+#
+#    fig = plt.figure(figsize = (8,8))
+#    ax = fig.add_subplot(1,1,1) 
+#    ax.set_xlabel('Principal Component 1', fontsize = 15)
+#    ax.set_ylabel('Principal Component 2', fontsize = 15)
+#    ax.set_title('2 component PCA', fontsize = 20)
+#    targets = ['Sp1','Sp2','Sp3']
+#    colors = ['r', 'g', 'b']
+#    for target, color in zip(targets,colors):
+#        indicesToKeep = finalDf['target_names'] == target
+#        ax.scatter(finalDf.loc[indicesToKeep, 'principal component 1']
+#                   , finalDf.loc[indicesToKeep, 'principal component 2']
+#                   , c = color
+#                   , s = 50)
+#    ax.legend(targets)
+#    ax.grid()
+#    
+#    
 #    df_train = df_mfcc.sample(frac=0.02, random_state=1)
 #    df_test = df_mfcc.drop(df_train.index)
 #    
