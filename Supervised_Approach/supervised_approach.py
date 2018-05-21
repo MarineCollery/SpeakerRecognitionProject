@@ -36,6 +36,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn import neighbors
 
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 import pandas as pd
 
@@ -62,14 +63,20 @@ def trainAndEvaluate(dataset, dataset_test, n_components=40, dimReduction='PCA',
         dataset['data'] = standard_scaler.fit_transform(dataset['data'], standard_scaler.get_params())
         dataset_test['data'] = standard_scaler.transform(dataset_test['data'], standard_scaler.get_params())
 
-    ## Dimensionality reduction
-    if (dimReduction == 'PCA'):
-        dimRed = PCA(n_components=n_components)
-    elif (dimReduction == 'FA'):
-        dimRed = FeatureAgglomeration(n_clusters=n_components)
-
-    dataset['data'] = dimRed.fit_transform(dataset['data'])
-    dataset_test['data'] = dimRed.transform(dataset_test['data'])
+#    ## Dimensionality reduction
+#    
+#    
+#    if (dimReduction == 'LDA'):
+#        dimRed = LinearDiscriminantAnalysis(n_components=n_components)
+#        dataset['data'] = dimRed.fit(dataset['data'], dataset['target']).transform(dataset['data'])
+#        dataset_test['data'] = dimRed.transform(dataset_test['data'])
+#    else:
+#        if (dimReduction == 'PCA'):
+#            dimRed = PCA(n_components=n_components)
+#        elif (dimReduction == 'FA'):
+#            dimRed = FeatureAgglomeration(n_clusters=n_components)
+#        dataset['data'] = dimRed.fit_transform(dataset['data'])
+#        dataset_test['data'] = dimRed.transform(dataset_test['data'])
 
     ## Classifier initialisation
     if (classifier == 'SVC'):
@@ -229,17 +236,17 @@ def plot_un_and_normalized_cnf(cnf_matrix, classes, name):
     plt.savefig(name+'_normalized.png')
 #    plt.show()
     
-def generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2, 
+def generate_plots(dataset_name, one_lang=False, language="L2", 
                    classifier="SVC", n_components=40, dimReduction='PCA', 
                    pre_speaker=False, nbr_elements=10000):
     
     
     if one_lang:
-        df_train, df_test = data.data_ONE_LANG(dataset_name, language, frac_train) 
-        name = dataset_name+'_'+language+'_'+'ONLY'+'_'+str(frac_train)+'_'+dimReduction+'_'+str(n_components)+'_pre_speaker_'+str(pre_speaker)
+        df_train, df_test = data.data_ONE_LANG(dataset_name, language, nbr_elements) 
+        name = dataset_name+'_'+language+'_'+'ONLY'+'_'+str(nbr_elements)+'_'+classifier+'_'+dimReduction+'_'+str(n_components)+'_pre_speaker_'+str(pre_speaker)
     else:
         df_train, df_test = data.data(dataset_name, language, all_train=False, nbr_elements=nbr_elements)
-        name = dataset_name+'_'+language+'_'+str(nbr_elements)+'_train_'+'LEFT_FOR_TEST'+'_'+dimReduction+'_'+str(n_components)+'_pre_speaker_'+str(pre_speaker)
+        name = dataset_name+'_'+language+'_'+str(nbr_elements)+'_train_'+'LEFT_FOR_TEST'+'_'+classifier+'_'+dimReduction+'_'+str(n_components)+'_pre_speaker_'+str(pre_speaker)
     
     #Delete unwanted colums
     if 'frameIndex' in df_train.columns.values.tolist():
@@ -268,6 +275,34 @@ def generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2,
     dataset = data.restructure_data(df_train)
     dataset_test = data.restructure_data(df_test)
     
+#    if 'MFCC' in dataset_name:
+#        #plot boxplot
+#        mfcc = [str(i) for i in range(1,14)]
+#        mfcc_de = [str(i)+'_de' for i in range(1,14)]
+#        mfcc_de_de = [str(i)+'_de_de' for i in range(1,14)]
+#        dataset['data'].columns = mfcc+mfcc_de+mfcc_de_de
+#    #    plt.figure(figsize=(12,8))
+#    #    bp = dataset['data'].boxplot(rot=45)
+#    #    plt.savefig('MFCC'+'_box_plot.png')
+#        
+#        df = dataset['data'].loc[:,mfcc_de_de]
+#        df['Speaker'] = pd.Series(dataset['target'])
+#        plt.figure(figsize=(14,8))
+#        bp = df.boxplot(by='Speaker',figsize=(12,8))
+#        plt.savefig('MFCC_de_de'+'_box_plot_per_Speaker.png')
+#        
+#    else:
+##        plt.figure(figsize=(15,15))
+##        bp = dataset['data'].boxplot(rot=45)
+##        plt.savefig('Speaker_trait'+'_box_plot.png')
+#        print(len(dataset['data'].columns.values.tolist()))
+#        columns = ['pcm_fftMag_spectralVariance_sma', 'pcm_fftMag_spectralVariance_sma.1', 'pcm_fftMag_spectralVariance_sma_de', 'pcm_fftMag_spectralVariance_sma_de.1']
+#        df = dataset['data'].loc[:,columns]
+#        df['Speaker'] = pd.Series(dataset['target'])
+#        plt.figure(figsize=(14,8))
+#        bp = df.boxplot(by='Speaker',figsize=(12,8))
+#        plt.savefig('Speaker_trait_spectral_variance'+'_box_plot_per_Speaker.png')
+    
     acc, cnf_matrix, report = trainAndEvaluate(dataset, dataset_test, n_components, dimReduction, classifier, pre_speaker)
     f = open(name+'.txt','w')
     f.write(report)
@@ -278,7 +313,7 @@ def generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2,
     plot_un_and_normalized_cnf(cnf_matrix, dataset['target_names'], name)
     
     
-    return acc
+#    return acc
     
     
 
@@ -306,29 +341,237 @@ def main():
     # Standardization on the speaker level
     pre_speaker = False
     
-#    generate_plots(dataset_name_MFCC, one_lang=False, language="L2", frac_train=0.2, 
+#    generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
 #                   classifier="SVC", n_components=30, dimReduction='PCA', 
 #                   pre_speaker=False, nbr_elements=10000)
     
-    acc =[]
-    acc2 =[]
-    for i in range (9,39,3):
-        print("Generating %d" % i)
-        acc.append(generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2, 
-                   classifier="SVC", n_components=i, dimReduction='PCA', 
-                   pre_speaker=True, nbr_elements=10000))
-        acc2.append(generate_plots(dataset_name, one_lang=False, language="L2", frac_train=0.2, 
-                   classifier="SVC", n_components=i, dimReduction='PCA', 
-                   pre_speaker=False, nbr_elements=10000))
-        
-    plt.plot(range (9,39,3),acc,'bo', label='std per speaker')
-    plt.plot(range (9,39,3),acc2,'bo', label='std on all data')
-    plt.legend()
-    plt.title("Accuracy evolution with nbr of components of PCA dimensionality reduction")
-    plt.xlabel("Accuracy")
-    plt.ylabel("nbr component")
-    plt.savefig(dataset_name+'_Evolution_Acc_PCA.png')
-    plt.show()
+    #EVOLUTION ofAcc with PCA
+#    acc =[]
+#    acc2 =[]
+#    for i in range (9,39,3):
+#        print("Generating %d" % i)
+#        acc.append(generate_plots(dataset_name, one_lang=False, language="L2", 
+#                   classifier="SVC", n_components=i, dimReduction='PCA', 
+#                   pre_speaker=True, nbr_elements=10000))
+#        acc2.append(generate_plots(dataset_name, one_lang=False, language="L2", 
+#                   classifier="SVC", n_components=i, dimReduction='PCA', 
+#                   pre_speaker=False, nbr_elements=10000))
+#        
+#    plt.plot(range (9,39,3),acc,'bo', label='std per speaker')
+#    plt.plot(range (9,39,3),acc2,'bo', label='std on all data')
+#    plt.legend()
+#    plt.title("Accuracy evolution with nbr of components of PCA dimensionality reduction")
+#    plt.xlabel("Accuracy")
+#    plt.ylabel("nbr component")
+#    plt.savefig(dataset_name+'_Evolution_Acc_PCA.png')
+#    plt.show()
+    
+    
+#    generate_plots(dataset_name, one_lang=False, language="L2", 
+#                   classifier="SVC", n_components=2, dimReduction='PCA', 
+#                   pre_speaker=False, nbr_elements=10000)
+#    generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
+#                   classifier="SVC", n_components=2, dimReduction='PCA', 
+#                   pre_speaker=False, nbr_elements=10000)
+
+
+#    #Generate plots for FR train OTHER test
+#    acc_mfcc_true = np.zeros(3)
+#    acc_mfcc_false = np.zeros(3)
+#    acc_ST_true = np.zeros(3)
+#    acc_ST_false = np.zeros(3)
+#    
+#    acc_mfcc_true[0] = generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_mfcc_false[0] = generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    acc_ST_true[0] = generate_plots(dataset_name, one_lang=False, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_ST_false[0] = generate_plots(dataset_name, one_lang=False, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    
+#    
+#    acc_mfcc_true[1] = generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_mfcc_false[1] = generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    acc_ST_true[1] = generate_plots(dataset_name, one_lang=False, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_ST_false[1] = generate_plots(dataset_name, one_lang=False, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    
+#    
+#    acc_mfcc_true[2] = generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_mfcc_false[2] = generate_plots(dataset_name_MFCC, one_lang=False, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    acc_ST_true[2] = generate_plots(dataset_name, one_lang=False, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_ST_false[2] = generate_plots(dataset_name, one_lang=False, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+    
+    
+    
+##    #Generate plots for FR train FR test
+#    acc_mfcc_true = np.zeros(3)
+#    acc_mfcc_false = np.zeros(3)
+#    acc_ST_true = np.zeros(3)
+#    acc_ST_false = np.zeros(3)
+#    
+#    acc_mfcc_true[0] = generate_plots(dataset_name_MFCC, one_lang=True, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_mfcc_false[0] = generate_plots(dataset_name_MFCC, one_lang=True, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    acc_ST_true[0] = generate_plots(dataset_name, one_lang=True, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_ST_false[0] = generate_plots(dataset_name, one_lang=True, language="L2", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    
+#    
+#    acc_mfcc_true[1] = generate_plots(dataset_name_MFCC, one_lang=True, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_mfcc_false[1] = generate_plots(dataset_name_MFCC, one_lang=True, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    acc_ST_true[1] = generate_plots(dataset_name, one_lang=True, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_ST_false[1] = generate_plots(dataset_name, one_lang=True, language="L2", 
+#                 classifier='kNN', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    
+#    
+#    acc_mfcc_true[2] = generate_plots(dataset_name_MFCC, one_lang=True, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_mfcc_false[2] = generate_plots(dataset_name_MFCC, one_lang=True, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+#    acc_ST_true[2] = generate_plots(dataset_name, one_lang=True, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_ST_false[2] = generate_plots(dataset_name, one_lang=True, language="L2", 
+#                 classifier='tree', n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+
+
+#    #Generate plots for EN train EN test
+    acc_mfcc_true = np.zeros(3)
+    acc_mfcc_false = np.zeros(3)
+    acc_ST_true = np.zeros(3)
+    acc_ST_false = np.zeros(3)
+    
+#    acc_mfcc_true[0] = generate_plots(dataset_name_MFCC, one_lang=True, language="L1", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=True, nbr_elements=10000)
+#    acc_mfcc_false[0] = generate_plots(dataset_name_MFCC, one_lang=True, language="L1", 
+#                 classifier="SVC", n_components='all', dimReduction='PCA', 
+#                 pre_speaker=False, nbr_elements=10000)
+    acc_ST_true[0] = generate_plots(dataset_name, one_lang=True, language="L1", 
+                 classifier="SVC", n_components='all', dimReduction='PCA', 
+                 pre_speaker=True, nbr_elements=10000)
+    acc_ST_false[0] = generate_plots(dataset_name, one_lang=True, language="L1", 
+                 classifier="SVC", n_components='all', dimReduction='PCA', 
+                 pre_speaker=False, nbr_elements=10000)
+    
+    
+    acc_mfcc_true[1] = generate_plots(dataset_name_MFCC, one_lang=True, language="L1", 
+                 classifier='kNN', n_components='all', dimReduction='PCA', 
+                 pre_speaker=True, nbr_elements=10000)
+    acc_mfcc_false[1] = generate_plots(dataset_name_MFCC, one_lang=True, language="L1", 
+                 classifier='kNN', n_components='all', dimReduction='PCA', 
+                 pre_speaker=False, nbr_elements=10000)
+    acc_ST_true[1] = generate_plots(dataset_name, one_lang=True, language="L1", 
+                 classifier='kNN', n_components='all', dimReduction='PCA', 
+                 pre_speaker=True, nbr_elements=10000)
+    acc_ST_false[1] = generate_plots(dataset_name, one_lang=True, language="L1", 
+                 classifier='kNN', n_components='all', dimReduction='PCA', 
+                 pre_speaker=False, nbr_elements=10000)
+    
+    
+    acc_mfcc_true[2] = generate_plots(dataset_name_MFCC, one_lang=True, language="L1", 
+                 classifier='tree', n_components='all', dimReduction='PCA', 
+                 pre_speaker=True, nbr_elements=10000)
+    acc_mfcc_false[2] = generate_plots(dataset_name_MFCC, one_lang=True, language="L1", 
+                 classifier='tree', n_components='all', dimReduction='PCA', 
+                 pre_speaker=False, nbr_elements=10000)
+    acc_ST_true[2] = generate_plots(dataset_name, one_lang=True, language="L1", 
+                 classifier='tree', n_components='all', dimReduction='PCA', 
+                 pre_speaker=True, nbr_elements=10000)
+    acc_ST_false[2] = generate_plots(dataset_name, one_lang=True, language="L1", 
+                 classifier='tree', n_components='all', dimReduction='PCA', 
+                 pre_speaker=False, nbr_elements=10000)
+
+
+    
+    
+#    # data to plot
+#    n_groups = 3
+#    #MFCC
+#    acc = (0.811172, 0.670310, 0.572464)
+#    pre = (0.81, 0.71, 0.58)
+#    rec = (0.81, 0.67, 0.57)
+#    f1  = (0.81, 0.66, 0.57)
+#    #Speaker Trait
+##    acc = [0.835591,0.720581, 0.9144]
+##    pre = (0.84, 0.72, 0.91)
+##    rec = (0.84, 0.72, 0.91)
+##    f1 = (0.84, 0.72, 0.91)
+#     
+#    # create plot
+#    fig, ax = plt.subplots()
+#    index = np.arange(n_groups)
+#    bar_width = 0.2
+#    opacity = 0.8
+#     
+#    rects1 = plt.bar(index+bar_width/2-bar_width, acc, bar_width,
+#                     alpha=opacity,
+#                     color='r',
+#                     label='Accuracy')
+#     
+#    rects2 = plt.bar(index+bar_width/2, pre, bar_width,
+#                     alpha=opacity,
+#                     color='g',
+#                     label='Precision')
+#    rects3 = plt.bar(index+bar_width/2+bar_width, rec, bar_width,
+#                     alpha=opacity,
+#                     color='b',
+#                     label='Recall')
+#    rects4 = plt.bar(index+bar_width/2+2*bar_width, f1, bar_width,
+#                     alpha=opacity,
+#                     color='orange',
+#                     label='F1')
+#    
+#    
+#
+#    plt.xlabel('Models')
+#    plt.ylabel('Metrics')
+#    plt.title('Models Comparison for Speaker Test feature set')
+#    plt.xticks(index + bar_width, ('SVM', 'kNN', 'Tree'))
+#    plt.legend(loc=4)
+#     
+#    plt.tight_layout()
+#    plt.savefig(dataset_name_MFCC+'_Models_comparison.png')
+#    plt.show()
+    
+    
 #        
 #    
 #    # Load dataset 
