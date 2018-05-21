@@ -91,36 +91,30 @@ def restructure_data(df):
     return dataset
 
 
-def split_data_balanced_ONLY_ONE_LANG(df, name, language="L2", frac_train=0.2):
+def split_data_balanced_ONLY_ONE_LANG(df, name, language="L2", nbr_elements=10000):
     new_df = df[df.language==language]
+    new_df.index = range(new_df.shape[0])
     
-#    df_ref_SP1 = new_df[(new_df.target_names=="Sp1")]
-#    df_ref_SP2 = new_df[(new_df.target_names=="Sp2")]
-#    df_ref_SP3 = new_df[(new_df.target_names=="Sp3")]    
-#    
-#
-#    nb_sample_max = min(df_ref_SP1.shape[0],df_ref_SP2.shape[0],df_ref_SP3.shape[0])
-#    nb_row_by_speaker = int(nb_sample_max*frac_train)
-#
-#    print(nb_row_by_speaker)
-#
-#    df_train = pd.concat([df_ref_SP1.sample(nb_row_by_speaker, random_state=12),
-#                        df_ref_SP2.sample(nb_row_by_speaker, random_state=12),
-#                        df_ref_SP3.sample(nb_row_by_speaker, random_state=12)])# number of samples we keep
-#
-#    df_test = new_df.drop(df_train.index)
-#    #TO DO dOES NOT WORK !!!
+    df_ref_SP1 = new_df[(new_df.target_names=="Sp1")]
+    df_ref_SP2 = new_df[(new_df.target_names=="Sp2")]
+    df_ref_SP3 = new_df[(new_df.target_names=="Sp3")]    
+    
+    
+    nb_row_by_speaker = int(nbr_elements/3)
+    
+    print(nb_row_by_speaker)
+
+    df_train = pd.concat([df_ref_SP1.sample(nb_row_by_speaker, random_state=12),
+                        df_ref_SP2.sample(nb_row_by_speaker, random_state=12),
+                        df_ref_SP3.sample(nb_row_by_speaker, random_state=12)])# number of samples we keep
+
+    df_test = new_df.drop(df_train.index)
 #    print(df_train.shape[0])
 #    print(df_test.shape[0])
-#    
-#    df_train.sample(frac=1)# randomize 
-#    df_test.sample(frac=1)# randomize 
     
-    df_train = new_df.sample(frac=frac_train, random_state=1)
-    df_test = new_df.drop(df_train.index)
 
-    df_train.to_csv("TRAINING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(frac_train)+"_for_training.csv",index=True)
-    df_test.to_csv("TESTING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(frac_train)+"_for_training.csv",index=True)
+    df_train.to_csv("TRAINING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(nbr_elements)+"_for_training.csv",index=True)
+    df_test.to_csv("TESTING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(nbr_elements)+"_for_training.csv",index=True)
     
     return df_train, df
 
@@ -179,16 +173,16 @@ def data(name, language="L2",all_train=False,nbr_elements=10000):
         return df_train,df_test
     
 
-def data_ONE_LANG(name, language="L2", frac_train=0.2):
+def data_ONE_LANG(name, language="L2", nbr_elements=0.2):
     try:
-        df_train = pd.read_csv("TRAINING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(frac_train)+"_for_training.csv", ',')
-        df_test = pd.read_csv("TESTING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(frac_train)+"_for_training.csv", ',')
+        df_train = pd.read_csv("TRAINING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(nbr_elements)+"_for_training.csv", ',')
+        df_test = pd.read_csv("TESTING_"+name+"_speaker_balanced_"+language+"_training_"+language+"_testing_"+str(nbr_elements)+"_for_training.csv", ',')
         print("database "+name+" already splitted and created")
         return df_train,df_test
     except:
         print("database "+name+" needs to be created")
         df = read_features(name)
-        df_train, df_test = split_data_balanced_ONLY_ONE_LANG(df, name, language, frac_train)
+        df_train, df_test = split_data_balanced_ONLY_ONE_LANG(df, name, language, nbr_elements)
         return df_train,df_test
     
     
@@ -209,7 +203,7 @@ def main():
     os.chdir(path)
 
     
-    df_train,df_test = data_ONE_LANG('Speaker_trait', language="L2")
+    df_train,df_test = data_ONE_LANG('Speaker_trait', language="L2", frac_train=10000)
 #    df_train,df_test = data('MFCC', language="L2")
 #    df_train_mfcc, df_test_mfcc = data('MFCC')
     
