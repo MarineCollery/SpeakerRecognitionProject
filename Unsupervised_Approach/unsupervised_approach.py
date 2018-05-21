@@ -38,7 +38,7 @@ from sklearn import metrics
 
 from pathlib import Path
 
-
+onlyFrench = True
 
 def printRepartition(labels_pred, n_clusters, frac=0.05):
 
@@ -130,28 +130,37 @@ path_file.close()
 os.chdir(path)
 
 def createDatasets():
-    for featuresType in ['MFCC', 'Speaker_trait']
+    for featuresType in ['MFCC', 'Speaker_trait']:
         df_train,df_test = data.data(featuresType)
 
         df_train = df_train.fillna(0)#all NaN replaced by 0
-        df_test = df_test.fillna(0)#all NaN replaced by 0
+        if not(onlyFrench):
+            df_test = df_test.fillna(0)#all NaN replaced by 0
 
         # df_train = df_train.sample(n=5000, random_state=17)
         # df_test = df_test.sample(n=10000, random_state=17)
 
         dataset = data.restructure_data(df_train)
-        dataset_test = data.restructure_data(df_test)
+        if not(onlyFrench):
+            dataset_test = data.restructure_data(df_test)
 
-        dataset['data'] = np.concatenate([dataset['data'].values.astype('float'), dataset_test['data'].values.astype('float')])
-        dataset['target'] = np.concatenate([dataset['target'].values.astype('str'),
-                                     dataset_test['target'].values.astype('str')])
-        dataset['language'] = np.concatenate([dataset['language'].values.astype('str'),
-                                     dataset_test['language'].values.astype('str')])
+        if onlyFrench:
+            dataset['data'] = dataset['data'].values.astype('float')
+            dataset['target'] =dataset['target'].values.astype('str')
+        else:
+            dataset['data'] = np.concatenate([dataset['data'].values.astype('float'), dataset_test['data'].values.astype('float')])
+            dataset['target'] = np.concatenate([dataset['target'].values.astype('str'),
+                                         dataset_test['target'].values.astype('str')])
+            dataset['language'] = np.concatenate([dataset['language'].values.astype('str'),
+                                         dataset_test['language'].values.astype('str')])
         print("Scaling")
         standard_scaler = StandardScaler()
         dataset['data'] = standard_scaler.fit_transform(dataset['data'])
 
-        np.savez('UL/215832_frames-'+featuresType+'-dataset.npz', data=dataset['data'], target=dataset['target'], language=dataset['language'])
+        if(onlyFrench):
+            np.savez('UL/onlyFrench-'+featuresType+'-dataset.npz', data=dataset['data'], target=dataset['target'], language=dataset['language'])    
+        else:
+            np.savez('UL/215832_frames-'+featuresType+'-dataset.npz', data=dataset['data'], target=dataset['target'], language=dataset['language'])
 
         # dimRed = PCA(n_components=40)
         # X = dimRed.fit_transform(dataset['data'])
@@ -165,8 +174,12 @@ def trainAndSave(n_clusters, featuresType, algorithm):
     print("Number of clusters "+str(n_clusters))
     print("Features "+featuresType)
     print("Algorithm "+algorithm)
+    print("onlyFrench = "+str(onlyFrench))
 
-    dataset = np.load('UL/215832_frames-'+featuresType+'-dataset.npz')
+    if not(onlyFrench):
+        dataset = np.load('UL/215832_frames-'+featuresType+'-dataset.npz')
+    else:
+        dataset = np.load('UL/onlyFrench-'+featuresType+'-dataset.npz')
     X = dataset['data']
     
 
@@ -174,8 +187,11 @@ def trainAndSave(n_clusters, featuresType, algorithm):
         labels_pred = KMeans(n_clusters=n_clusters, random_state=1).fit_predict(X)
     if (algorithm == 'GaussianMixture'):
         labels_pred = GaussianMixture(n_components=n_clusters, random_state=1).fit(X).predict(X)
-
-    np.savez('UL/'+algorithm+'-'+featuresType+'-215832_frames-'+str(n_clusters)+'clusters.npz', 
+    if not(onlyFrench):
+        np.savez('UL/'+algorithm+'-'+featuresType+'-215832_frames-'+str(n_clusters)+'clusters.npz', 
+        data=labels_pred)
+    else:
+        np.savez('UL/'+algorithm+'-'+featuresType+'-onlyFrench-'+str(n_clusters)+'clusters.npz', 
         data=labels_pred)
 
 
@@ -187,26 +203,34 @@ def analyse(n_clusters, featuresType, algorithm):
     print("Number of clusters "+str(n_clusters))
     print("Features "+featuresType)
     print("Algorithm "+algorithm)
+    print("onlyFrench = "+str(onlyFrench))
     
-    dataset = np.load('UL/215832_frames-'+featuresType+'-dataset.npz')
+    if not(onlyFrench):
+        dataset = np.load('UL/215832_frames-'+featuresType+'-dataset.npz')
+    else:
+        dataset = np.load('UL/onlyFrench-'+featuresType+'-dataset.npz')
     labels_true = dataset['target']
 
-    path = 'UL/'+algorithm+'-'+featuresType+'-215832_frames-'+str(n_clusters)+'clusters.npz'
+    if not(onlyFrench):
+        path = 'UL/'+algorithm+'-'+featuresType+'-215832_frames-'+str(n_clusters)+'clusters.npz'
+    else:
+        path = 'UL/'+algorithm+'-'+featuresType+'-onlyFrench-'+str(n_clusters)+'clusters.npz'
 
     my_file = Path(path)
     if not(my_file.is_file()):
         trainAndSave(n_clusters, featuresType, algorithm)
     labels_pred = np.load(path)['data']
     print("rand score: "+str(metrics.adjusted_rand_score(labels_true, labels_pred)))   
-    if (metrics.adjusted_rand_score(labels_true, labels_pred) > 0.01):
+    if (metrics.adjusted_rand_score(labels_true, labels_pred)):
        #printRepartition(labels_pred, n_clusters=n_clusters)
         print("ACP = "+str(acp(labels_true, labels_pred, n_clusters)))
 
 
+#createDatasets()
 
 for alg in ['KMeans', 'GaussianMixture']:
     for feat in ["MFCC", "Speaker_trait"]:
-        for m in [3, 6, 8, 10]:
+        for m in [3,6,8,10]:
             analyse(m, feat, alg)
 
 
